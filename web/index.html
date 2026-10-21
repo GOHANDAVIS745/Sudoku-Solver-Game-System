@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>C++ Sudoku Solver</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Sudoku Solver</h1>
+    
+    <!-- 9x9 Grid generated dynamically via JavaScript -->
+    <div id="sudoku-grid" class="grid"></div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <button id="solve-btn" class="btn btn-primary">Solve</button>
+      <button id="clear-btn" class="btn btn-secondary">Clear</button>
+      <button id="sample-btn" class="btn btn-outline">Load Sample</button>
+    </div>
+
+    <!-- Status message area -->
+    <p id="status-message"></p>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
