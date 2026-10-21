@@ -13,17 +13,32 @@
     <!-- 9x9 Grid generated dynamically via JavaScript -->
     <div id="sudoku-grid" class="grid"></div>
 
-    <!-- Controls -->
+	<!-- Main Controls -->
     <div class="controls">
+      <button id="open-generate-btn" class="btn btn-outline">Generate Puzzle</button>
       <button id="solve-btn" class="btn btn-primary">Solve</button>
       <button id="clear-btn" class="btn btn-secondary">Clear</button>
-      <button id="sample-btn" class="btn btn-outline">Load Sample</button>
     </div>
+
+    <!-- Hidden Difficulty Popup (Modal) -->
+    <dialog id="difficulty-modal" class="modal">
+      <h3>Select Difficulty</h3>
+      <div class="difficulty-options">
+        <label><input type="radio" name="difficulty" value="1" checked> Easy</label>
+        <label><input type="radio" name="difficulty" value="2"> Medium</label>
+        <label><input type="radio" name="difficulty" value="3"> Hard</label>
+      </div>
+      <div class="modal-actions">
+        <button id="proceed-btn" class="btn btn-primary">Proceed</button>
+        <button id="cancel-btn" class="btn btn-outline">Cancel</button>
+      </div>
+    </dialog>
 
     <!-- Status message area -->
     <p id="status-message"></p>
   </div>
 
+  <script src="solver.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
