@@ -158,3 +158,25 @@ h1 {
   justify-content: flex-end;
   gap: 10px;
 }
+
+/* Phase 5: Error and Polish Animations */
+
+/* Changes the board border to red */
+.grid.error-state {
+  border-color: #dc2626;
+}
+.grid.error-state .cell {
+  color: #dc2626;
+}
+
+/* Shake animation for invalid puzzles */
+.shake {
+  animation: shakeAnimation 0.4s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes shakeAnimation {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
+}
