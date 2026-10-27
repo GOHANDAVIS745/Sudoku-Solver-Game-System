@@ -16,6 +16,7 @@
 	<!-- Main Controls -->
     <div class="controls">
       <button id="open-generate-btn" class="btn btn-outline">Generate Puzzle</button>
+	  <button id="hint-btn" class="btn btn-hint">💡 Hint</button>
       <button id="solve-btn" class="btn btn-primary">Solve</button>
 	  <button id="reset-btn" class="btn btn-outline">Reset</button>
       <button id="clear-btn" class="btn btn-secondary">Clear</button>
@@ -37,6 +38,16 @@
 
     <!-- Status message area -->
     <p id="status-message"></p>
+
+	<div class="instructions">
+      <h2>How to Play</h2>
+      <ul>
+        <li>Fill empty cells with numbers from <strong>1 to 9</strong>.</li>
+        <li>Every <strong>row</strong>, <strong>column</strong>, and <strong>3×3 box</strong> must contain each digit exactly once.</li>
+        <li>Dark bold numbers are fixed clues and cannot be changed.</li>
+        <li>If you place a conflicting number, the board will flash red!</li>
+      </ul>
+    </div>
   </div>
 
   <script src="solver.js"></script>

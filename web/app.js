@@ -202,3 +202,112 @@ document.getElementById("proceed-btn").addEventListener("click", () => {
 
 // Initialize
 createGrid();
+
+let lastFocusedIndex = -1;
+
+// Track focused cell in createGrid()
+function createGrid() {
+  gridContainer.innerHTML = "";
+  for (let i = 0; i < 81; i++) {
+    const input = document.createElement("input");
+    input.type = "text";
+    input.maxLength = 1;
+    input.classList.add("cell");
+    input.dataset.index = i;
+
+    input.addEventListener("input", handleInput);
+    input.addEventListener("keydown", handleKeyNavigation);
+    input.addEventListener("focus", (e) => {
+      lastFocusedIndex = parseInt(e.target.dataset.index, 10);
+    });
+
+    gridContainer.appendChild(input);
+  }
+}
+
+// Remove hint styling if the user edits the cell
+function handleInput(e) {
+  const value = e.target.value;
+  if (!/^[1-9]$/.test(value)) {
+    e.target.value = "";
+  } else {
+    e.target.classList.remove("solved", "hint");
+  }
+  checkRealTimeConflicts();
+}
+
+// Hint Button Click Handler
+document.getElementById("hint-btn").addEventListener("click", () => {
+  if (!sudokuModule) return;
+  const currentBoard = getBoardString();
+
+  // Validate board before solving
+  if (!isValidBoardState(currentBoard)) {
+    gridContainer.classList.add("error-state", "shake");
+    statusMsg.textContent = "Conflicting numbers detected. Fix errors before requesting a hint!";
+    statusMsg.style.color = "#dc2626";
+    setTimeout(() => gridContainer.classList.remove("shake"), 400);
+    return;
+  }
+
+  if (!currentBoard.includes("0")) {
+    statusMsg.textContent = "The board is already filled!";
+    statusMsg.style.color = "#16a34a";
+    return;
+  }
+
+  // Pass focused index if empty, or -1 for random
+  const preferred = (lastFocusedIndex >= 0 && currentBoard[lastFocusedIndex] === "0") 
+    ? lastFocusedIndex 
+    : -1;
+
+// 1. Solve the board using the pre-compiled C++ WebAssembly function
+const solvedBoard = sudokuModule.solvePuzzle(currentBoard);
+
+if (!solvedBoard || solvedBoard.length !== 81) {
+  statusMsg.textContent = "No valid solution exists from this board state.";
+  statusMsg.style.color = "#dc2626";
+  return;
+}
+
+// 2. Pick the empty cell to reveal (prioritize the focused cell if empty)
+let targetIndex = -1;
+if (lastFocusedIndex >= 0 && lastFocusedIndex < 81 && currentBoard[lastFocusedIndex] === "0") {
+  targetIndex = lastFocusedIndex;
+} else {
+  const emptyIndices = [];
+  for (let i = 0; i < 81; i++) {
+    if (currentBoard[i] === "0") emptyIndices.push(i);
+  }
+  if (emptyIndices.length === 0) return;
+  targetIndex = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+}
+
+// 3. Reveal only that single square
+const targetCell = gridContainer.children[targetIndex];
+const correctDigit = solvedBoard[targetIndex];
+
+if (targetCell) {
+  targetCell.value = correctDigit;
+  targetCell.classList.add("hint");
+  targetCell.focus();
+  checkRealTimeConflicts();
+
+  const row = Math.floor(targetIndex / 9) + 1;
+  const col = (targetIndex % 9) + 1;
+  statusMsg.textContent = `💡 Hint: Placed ${correctDigit} at Row ${row}, Column ${col}.`;
+  statusMsg.style.color = "#d97706";
+}
+
+  if (targetCell) {
+    targetCell.value = valStr;
+    targetCell.classList.add("hint");
+    targetCell.focus();
+    checkRealTimeConflicts();
+
+    const row = Math.floor(targetIndex / 9) + 1;
+    const col = (targetIndex % 9) + 1;
+    statusMsg.textContent = `Hint: Placed ${valStr} at Row ${row}, Column ${col}.`;
+    statusMsg.style.color = "#d97706";
+  }
+});

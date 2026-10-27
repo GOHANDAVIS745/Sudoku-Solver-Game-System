@@ -180,3 +180,68 @@ h1 {
   30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
   40%, 60% { transform: translate3d(4px, 0, 0); }
 }
+
+/* ==========================================
+   How to Play Instructions Box
+   ========================================== */
+.instructions {
+  margin-top: 25px;
+  padding: 20px;
+  background-color: #f8fafc; /* Light gray-blue background */
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 420px; /* Aligns roughly with the width of the Sudoku board */
+  color: #334155;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.instructions h2 {
+  font-size: 1.15rem;
+  margin-top: 0;
+  margin-bottom: 12px;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Optional: Adds a tiny book icon before the title */
+.instructions h2::before {
+  content: "📖"; 
+  font-size: 1.1rem;
+}
+
+.instructions ul {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.instructions li {
+  margin-bottom: 8px;
+}
+
+/* Hint Button */
+.btn-hint {
+  background-color: #f59e0b;
+  color: #ffffff;
+}
+.btn-hint:hover {
+  background-color: #d97706;
+}
+
+/* Hinted Cell Visual Differentiation */
+.cell.hint {
+  color: #b45309;
+  background-color: #fef3c7;
+  font-weight: 700;
+  animation: hintPop 0.4s ease-out;
+}
+
+@keyframes hintPop {
+  0% { transform: scale(0.85); background-color: #fde68a; }
+  50% { transform: scale(1.1); background-color: #fef08a; }
+  100% { transform: scale(1); background-color: #fef3c7; }
+}

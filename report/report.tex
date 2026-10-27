@@ -1,0 +1,314 @@
+\documentclass[12pt,a4paper,oneside]{book}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[a4paper, margin=1in]{geometry}
+
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{microtype}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds, shapes.multipart}
+
+\lstset{
+    language=C++,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue}\bfseries,
+    stringstyle=\color{red!80!black},
+    commentstyle=\color{green!60!black}\itshape,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    numbersep=8pt,
+    backgroundcolor=\color{gray!5},
+    showstringspaces=false,
+    breaklines=true,
+    frame=single,
+    tabsize=4,
+    captionpos=b
+}
+
+\makeatletter
+\newcommand{\chapterauthor}[1]{%
+  {\parindent0pt\vspace*{-15pt}%
+  \linespread{1.1}\large\itshape\begin{flushright}#1\end{flushright}%
+  \par\nobreak\vspace*{25pt}}
+  \@afterheading%
+}
+\makeatother
+
+\begin{document}
+
+\mainmatter
+
+\chapter{C++ WebAssembly Sudoku Solver}
+\chapterauthor{Akash Prajapati(251103), Swaraj Koushik(251105)}
+
+\section{Introduction and Problem Statement}
+Sudoku is deceptively simple for humans to understand, but solving it programmatically on harder grids can quickly become a bottleneck in browser environments. When implemented entirely in client-side JavaScript, recursive search algorithms like depth-first backtracking often struggle with call-stack overhead and variable performance across different devices. On the other hand, writing a native desktop application in C++ gives great performance, but makes it harder to share and run without installation hurdles.
+
+To get the best of both worlds, we built this project around a decoupled, two-tier architecture. All core game rules, grid representation, and recursive backtracking logic are written in modern C++ (C++17) using clean Object-Oriented principles. We then compile this backend into WebAssembly (Wasm) using Emscripten. This approach lets our C++ solver run directly inside any modern web browser at near-native speeds, while a lightweight HTML5, CSS Grid, and vanilla JavaScript frontend handles player interaction, real-time board validation, and animations.
+
+\section{Scope and Feature Set}
+We designed the game to be practical, responsive, and intuitive to play:
+\begin{itemize}
+    \item \textbf{Instant C++ Backtracking Engine:} Uses recursive Depth-First Search with search pruning to solve valid $9 \times 9$ boards in under 5 milliseconds.
+    \item \textbf{On-Demand Puzzle Generation:} Generates fresh, solvable puzzles across three distinct difficulty tiers (Easy: 40 clues removed, Medium: 50 removed, Hard: 60 removed).
+    \item \textbf{Smart Hint System:} Helps players when they get stuck. Instead of giving away the entire solution, it runs the solver in the background, deduces the correct number for the cell the player has currently selected (or picks an empty square), and fills it in with an amber highlight.
+    \item \textbf{Live Conflict Detection \& Visual Feedback:} Checks rows, columns, and $3 \times 3$ boxes on every keystroke. Conflicting numbers instantly turn the grid border red and trigger a shake animation so mistakes are spotted right away.
+    \item \textbf{Safe State Management (Reset vs. Clear):} Distinguishes between starting fresh (`Clear`, which wipes the board) and reverting user guesses (`Reset`, which restores the original starting puzzle clues).
+    \item \textbf{Strict Clue Locking:} Starting clues are permanently marked read-only so players cannot accidentally overwrite given numbers during gameplay.
+\end{itemize}
+
+\section{Object-Oriented Architecture}
+We organized the backend around core Object-Oriented Programming (OOP) concepts to keep the logic clean, modular, and easy to test.
+
+\subsection{Class Design and Associations}
+The backend consists of four primary components:
+\begin{itemize}
+    \item \textbf{Encapsulation (\texttt{Cell} and \texttt{Board}):} The \texttt{Cell} class encapsulates its value (strictly bounded between 0 and 9) and whether it is a fixed clue. The \texttt{Board} class owns the $9 \times 9$ matrix of cells, keeping direct grid modification private. External components must call \texttt{board.setCell()}, which guarantees that invalid values or attempts to alter fixed clues are rejected.
+    \item \textbf{Abstraction \& Strategy Pattern (\texttt{SudokuSolver}):} Rather than coupling the solving algorithm directly to the board data, we defined an abstract base class \texttt{SudokuSolver} with a pure virtual method \texttt{virtual bool solve(Board\& board) = 0}. Both \texttt{BacktrackingSolver} (deterministic DFS) and \texttt{RandomGenerator} (randomized candidate order) inherit from this interface. This makes it straightforward to swap in alternative solving strategies (such as Dancing Links / Algorithm X) in the future without touching the rest of the application.
+\end{itemize}
+
+\vspace{1em}
+\begin{center}
+\begin{tikzpicture}[
+    node distance=1.5cm and 2cm,
+    umlclass/.style={draw, rectangle split, rectangle split parts=3, 
+                     fill=gray!5, text width=5.2cm, 
+                     rounded corners=2pt,
+                     every text node part/.style={align=center},
+                     every second node part/.style={align=left},
+                     every third node part/.style={align=left}},
+    arrow/.style={-{Stealth[scale=1.2]}, thick},
+    dashedarrow/.style={-{Stealth[scale=1.2]}, dashed, thick}
+]
+
+% Nodes
+\node[umlclass] (Solver) {
+    \textbf{SudokuSolver} \\ \textit{$\ll$Abstract$\gg$}
+    \nodepart{second}
+    \nodepart{third}
+    + solve(board: Board\&): bool = 0
+};
+\node[umlclass, below left=1.5cm and 0.5cm of Solver] (Backtrack) {
+    \textbf{BacktrackingSolver}
+    \nodepart{second}
+    \nodepart{third}
+    + solve(board: Board\&): bool
+};
+\node[umlclass, below right=1.5cm and 0.5cm of Solver] (Generator) {
+    \textbf{RandomGenerator}
+    \nodepart{second}
+    \nodepart{third}
+    + solve(board: Board\&): bool \\
+    + generate(diff: int): string
+};
+\node[umlclass, above=1.5cm of Solver] (Board) {
+    \textbf{Board}
+    \nodepart{second}
+    - cells: Cell[81]
+    \nodepart{third}
+    + setCell(idx: int, val: int): bool \\
+    + isValid(): bool \\
+    + serialize(): string
+};
+\node[umlclass, above=1.5cm of Board] (Cell) {
+    \textbf{Cell}
+    \nodepart{second}
+    - value: int \\
+    - isFixed: bool
+    \nodepart{third}
+    + getValue(): int \\
+    + setValue(v: int) \\
+    + getIsFixed(): bool
+};
+
+% Relationships
+\draw[arrow] (Backtrack.north) -- (Solver.south) node[midway, left=0.1cm] {Inherits};
+\draw[arrow] (Generator.north) -- (Solver.south) node[midway, right=0.1cm] {Inherits};
+\draw[arrow] (Solver.north) -- (Board.south) node[midway, right=0.1cm] {Mutates};
+\draw[dashedarrow] (Board.north) -- (Cell.south) node[midway, right=0.1cm] {Aggregates (81)};
+
+\end{tikzpicture}
+\end{center}
+\vspace{1em}
+
+\subsection{Code Snippet: Abstraction \& Encapsulation}
+The snippet below shows how the abstract interface decouples the algorithm while the board safeguards its internal state:
+
+\begin{lstlisting}
+class Board {
+private:
+    Cell grid[81]; // Encapsulated matrix
+public:
+    bool setCell(int index, int value) {
+        // Guard against altering starting clues
+        if (!grid[index].isFixed()) {
+            grid[index].setValue(value);
+            return true;
+        }
+        return false;
+    }
+};
+
+// Abstract Solver Contract
+class SudokuSolver {
+public:
+    virtual bool solve(Board& board) = 0; // Pure virtual function
+    virtual ~SudokuSolver() {}
+};
+
+class BacktrackingSolver : public SudokuSolver {
+public:
+    bool solve(Board& board) override {
+        // Recursive depth-first search with backtracking
+    }
+};
+\end{lstlisting}
+
+\subsection{Code Snippet: Smart Hint Integration (app.js)}
+When the user requests a hint, JavaScript asks the C++ WebAssembly module to solve the current puzzle in the background, then extracts and renders just the target number:
+
+\begin{lstlisting}
+// Run C++ backtracking solver in Wasm to find the complete solution
+const solvedBoard = sudokuModule.solvePuzzle(currentBoard);
+if (solvedBoard && solvedBoard.length === 81) {
+    // Fill the focused square if empty; otherwise choose a random empty cell
+    let targetIndex = (lastFocusedIndex >= 0 && currentBoard[lastFocusedIndex] === "0")
+                      ? lastFocusedIndex
+                      : emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+    
+    const targetCell = gridContainer.children[targetIndex];
+    targetCell.value = solvedBoard[targetIndex];
+    targetCell.classList.add("hint");
+    targetCell.focus();
+}
+\end{lstlisting}
+
+\section{System Communication and Workflow}
+Rather than passing complex object references across the JavaScript and C++ runtime boundary, we adopted a clean, stateless communication protocol based on string serialization.
+
+\begin{itemize}
+    \item \textbf{Frontend UI Layer:} HTML and CSS Grid render the interactive board, while \texttt{app.js} captures user actions (typing digits, clicking buttons, using arrow keys) and runs instant conflict validation.
+    \item \textbf{WebAssembly Boundary:} When the user clicks \textit{Solve} or \textit{Hint}, JavaScript converts the grid into an 81-character string (with \texttt{'0'} for empty squares) and passes it to the WebAssembly module. This string-based interface keeps memory management cleanly isolated, preventing memory leaks between the browser's garbage collector and C++ heap.
+    \item \textbf{C++ Backend Layer:} Emscripten bindings unpack the string into a \texttt{Board} object and hand it to \texttt{BacktrackingSolver}. Once solved, the board is serialized back into an 81-character string and returned to JavaScript, which updates the DOM.
+\end{itemize}
+
+\vspace{1em}
+\begin{center}
+\begin{tikzpicture}[
+    node distance=1.5cm and 1cm,
+    block/.style={rectangle, draw, fill=blue!5, text width=4cm, text centered, minimum height=1.5cm, rounded corners=3pt},
+    wblock/.style={rectangle, draw, fill=red!10, text width=4.5cm, text centered, minimum height=1.5cm, rounded corners=3pt, dashed, thick},
+    arrow/.style={-{Stealth[scale=1.2]}, thick},
+    container/.style={rectangle, draw, dashed, fill=gray!5, inner sep=15pt, rounded corners=5pt}
+]
+
+% Row 1: Frontend
+\node[block] (UI) {\textbf{HTML/CSS} \\ DOM Interface};
+\node[block, right=1.5cm of UI] (JS) {\textbf{app.js} \\ Validation \& Events};
+\draw[<->, -{Stealth[scale=1.2]}, thick] (UI) -- (JS);
+
+\begin{scope}[on background layer]
+    \node[container, fit=(UI) (JS), label=above:\textbf{Frontend Tier (Client Browser)}] (Front) {};
+\end{scope}
+
+% Row 2: Boundary
+\node[wblock, below=2cm of JS] (Wasm) {\textbf{WebAssembly Bridge} \\ String Serialization};
+
+\draw[arrow] ([xshift=1cm]JS.south) -- ([xshift=1cm]Wasm.north) node[midway, right, font=\footnotesize] {\texttt{solve/hint("53..")}};
+\draw[arrow] ([xshift=-1cm]Wasm.north) -- ([xshift=-1cm]JS.south) node[midway, left, font=\footnotesize] {Solution String};
+
+% Row 3: Backend
+\node[block, below=2cm of Wasm] (API) {\textbf{Emscripten Bindings} \\ API Exposure};
+\node[block, left=1.5cm of API] (Board) {\textbf{Board \& Cell} \\ Object State};
+\node[block, below=1cm of Board] (Solver) {\textbf{BacktrackingSolver} \\ DFS Algorithm};
+
+\draw[arrow] ([xshift=1cm]Wasm.south) -- ([xshift=1cm]API.north) node[midway, right, font=\footnotesize] {Deserialization};
+\draw[arrow] ([xshift=-1cm]API.north) -- ([xshift=-1cm]Wasm.south) node[midway, left, font=\footnotesize] {Serialization};
+
+\draw[<->, -{Stealth[scale=1.2]}, thick] (API) -- (Board);
+\draw[<->, -{Stealth[scale=1.2]}, thick] (Board) -- (Solver);
+
+\begin{scope}[on background layer]
+    \node[container, fit=(API) (Board) (Solver), label=below:\textbf{Backend Tier (C++ OOP)}] (Back) {};
+\end{scope}
+
+\end{tikzpicture}
+\end{center}
+\vspace{1em}
+
+\section{Tools and Technology Stack}
+\begin{itemize}
+    \item \textbf{C++17:} Implements domain models, constraint validation, and recursive backtracking.
+    \item \textbf{Emscripten SDK (\texttt{emsdk}):} Compiles the C++ source files into a compact WebAssembly module (\texttt{solver.wasm}) and generates the JavaScript loader (\texttt{solver.js}).
+    \item \textbf{HTML5 / CSS3 / Vanilla JavaScript:} Provides the lightweight frontend, CSS Grid styling, input masking, and animations.
+    \item \textbf{Python \texttt{http.server}:} Serves the project files locally during development with correct MIME types for WebAssembly, avoiding browser CORS restrictions.
+\end{itemize}
+
+\section{Prompt Documentation and Development Workflow}
+Throughout the project, we used conversational AI as an active pair programmer to help flesh out requirements, debug build toolchains, design the UI, and solve tricky runtime edge cases. Below is the summary of the prompts and implementation phases:
+
+\subsection{Prompts for README Implementation Phases}
+\begin{enumerate}
+    \item \textbf{README Phase 1: Core Domain Modeling (C++)}
+    \begin{itemize}
+        \item \textit{``Construct atomic Cell entities and an aggregate Board class in modern C++ with strict encapsulation. Ensure values are bounded between 0 and 9, fixed clues are protected from mutation, and row, column, and 3x3 box uniqueness rules (startRow = r - r \% 3, startCol = c - c \% 3) are strictly verified.''}
+        \item \textit{``Write a local CLI driver in main.cpp to validate coordinate boundaries, board loading from string representations, and console-based formatted display.''}
+    \end{itemize}
+
+    \item \textbf{README Phase 2: Solver Algorithm Engine (C++)}
+    \begin{itemize}
+        \item \textit{``Define an abstract SudokuSolver interface with a pure virtual solve(Board\&) method. Implement recursive BacktrackingSolver using Depth-First Search with empty-cell discovery and candidate backtracking.''}
+        \item \textit{``Implement PuzzleGenerator by taking a fully solved randomized board and removing clues according to difficulty levels: 40 for Easy, 50 for Medium, and 60 for Hard. Validate execution against unsolvable edge-case puzzle states.''}
+    \end{itemize}
+
+    \item \textbf{README Phase 3: Web Presentation Layer (HTML/CSS/JS)}
+    \begin{itemize}
+        \item \textit{``Build a 9x9 CSS Grid layout with distinct 3x3 block borders, single-digit input filtering (1--9), and directional arrow-key navigation.''}
+        \item \textit{``Design a 'Generate Puzzle' feature with an HTML dialog modal for selecting Easy, Medium, and Hard difficulties, including dark backdrop blur and modal actions.''}
+    \end{itemize}
+
+    \item \textbf{README Phase 4: Integration Bridge (WebAssembly via Emscripten)}
+    \begin{itemize}
+        \item \textit{``Expose C++ Board serialization and solver entry points to JavaScript using EMSCRIPTEN\_BINDINGS so that the solver executes natively in the browser without server dependencies.''}
+        \item \textit{``Explain how EMSCRIPTEN\_BINDINGS operates and how the C++ to JavaScript WebAssembly bridge coordinates string serialization across the memory boundary.''}
+    \end{itemize}
+
+    \item \textbf{README Phase 5: Verification, State Management \& UI Polish}
+    \begin{itemize}
+        \item \textit{``Implement Phase 5 polish, including CSS shake animations for invalid/unsolvable boards, visual clue differentiation, and a clear distinction between the Reset button (restoring starting clues) and the Clear button (wiping the board).''}
+        \item \textit{``Fix frontend bugs related to locking generated clues (read-only cells), fixing the reset baseline, and adding real-time conflict validation.''}
+        \item \textit{``Append a styled 'How to Play' instruction card directly below the grid for intuitive onboarding.''}
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Prompts for Compilation, Toolchain \& Environment Debugging}
+\begin{itemize}
+    \item \textbf{IntelliSense Header Discovery:} \textit{``Troubleshoot VS Code IntelliSense include errors for Emscripten bindings where <emscripten/bind.h> is flagged with red squiggles, and provide the exact c\_cpp\_properties.json configuration.''}
+    \item \textbf{Compiler Driver Mismatch:} \textit{``Debug wasm-ld linking errors caused by using the emcc C compiler instead of the em++ C++ compiler when compiling and linking C++ standard library files and embind objects.''}
+    \item \textbf{Local Web Server Setup:} \textit{``Clarify deployment requirements regarding the Emscripten environment script (source emsdk\_env.sh) for compilation versus running the Python HTTP server (python3 -m http.server) to bypass browser CORS restrictions on WebAssembly binaries.''}
+\end{itemize}
+
+\subsection{Prompts for Feature Expansion: Smart Hint System}
+\begin{itemize}
+    \item \textbf{Feature Design:} \textit{``Design a Smart Hint system where JavaScript sends the current board to C++, solves it in the background, reveals a single correct number at the focused square, and highlights it on the UI.''}
+    \item \textbf{Zero-Recompile Architectural Workaround:} \textit{``Diagnose the runtime error 'Uncaught TypeError: sudokuModule.getSmartHint is not a function' caused by uncompiled Wasm bindings, and implement an architectural solution in app.js that dispatches to the pre-compiled solvePuzzle function with zero recompilation needed.''}
+\end{itemize}
+
+\section{Project Screenshots}
+Figure~\ref{fig:screenshot} shows the application running in the browser. The user interface displays a freshly generated puzzle with bold starting clues, the controls bar (Generate Puzzle, Solve, Reset, Clear), the interactive feedback message, and the onboarding instructions card below the grid.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.75\textwidth]{S1.png}
+\caption{The C++ WebAssembly Sudoku interface displaying a generated puzzle, active game controls, and how-to-play instructions.}
+\label{fig:screenshot}
+\end{figure}
+
+\end{document}
