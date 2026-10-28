@@ -3,51 +3,118 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>C++ Sudoku Solver</title>
+  <title>Sudoku Solver & Game System</title>
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
-  <div class="container">
-    <h1>Sudoku Solver</h1>
-    
-    <!-- 9x9 Grid generated dynamically via JavaScript -->
-    <div id="sudoku-grid" class="grid"></div>
+<body data-theme="ocean">
+  <div class="app-wrapper">
+    <!-- Top Header: Title & Theme Selector -->
+    <header class="top-bar">
+      <div class="logo-area">
+        <h1>Sudoku Game</h1>
+        <span class="badge">Wasm Engine</span>
+      </div>
+      
+      <!-- Theme Selector Dropdown -->
+      <div class="theme-picker">
+        <label for="theme-select">🎨 Theme:</label>
+        <select id="theme-select" aria-label="Select background theme">
+          <option value="ocean" selected>🌊 Ocean</option>
+          <option value="wood">🪵 Wood</option>
+          <option value="sky">☁️ Sky</option>
+          <option value="space">🚀 Space</option>
+          <option value="nature">🌿 Nature</option>
+          <option value="dark">🌙 Dark Slate</option>
+          <option value="light">☀️ Clean Light</option>
+        </select>
+      </div>
+    </header>
 
-	<!-- Main Controls -->
-    <div class="controls">
-      <button id="open-generate-btn" class="btn btn-outline">Generate Puzzle</button>
-	  <button id="hint-btn" class="btn btn-hint">💡 Hint</button>
-      <button id="solve-btn" class="btn btn-primary">Solve</button>
-	  <button id="reset-btn" class="btn btn-outline">Reset</button>
-      <button id="clear-btn" class="btn btn-secondary">Clear</button>
-    </div>
+    <!-- Two-Column Layout: Left = Board, Right = Keypad & Controls -->
+    <main class="game-container">
+      <!-- Left Column: 9x9 Sudoku Board -->
+      <section class="board-column">
+        <div id="sudoku-grid" class="grid" role="grid" aria-label="Sudoku 9x9 Grid"></div>
+        <p id="status-message" aria-live="polite"></p>
+      </section>
 
-    <!-- Hidden Difficulty Popup (Modal) -->
+      <!-- Right Column: Timer, 3x3 Phone Keypad, Controls -->
+      <aside class="sidebar-column">
+        <!-- Live Game Timer (Directly Above Keypad) -->
+        <div class="timer-card" id="timer-card">
+          <div class="timer-display">
+            <span class="timer-icon">⏱️</span>
+            <span id="timer-text">00:00</span>
+          </div>
+          <button id="timer-pause-btn" class="timer-btn" type="button" title="Pause / Resume Timer">⏸️</button>
+        </div>
+
+        <!-- 3x3 Phone-Style Keypad Card -->
+        <div class="keypad-card">
+          <div class="keypad-header">Keypad & Tools</div>
+
+          <!-- 3x3 Numeric Grid (Phone Layout: 1-9) -->
+          <div class="phone-keypad" id="phone-keypad">
+            <button type="button" class="num-btn" data-key="1">1</button>
+            <button type="button" class="num-btn" data-key="2">2</button>
+            <button type="button" class="num-btn" data-key="3">3</button>
+            <button type="button" class="num-btn" data-key="4">4</button>
+            <button type="button" class="num-btn" data-key="5">5</button>
+            <button type="button" class="num-btn" data-key="6">6</button>
+            <button type="button" class="num-btn" data-key="7">7</button>
+            <button type="button" class="num-btn" data-key="8">8</button>
+            <button type="button" class="num-btn" data-key="9">9</button>
+          </div>
+
+          <!-- Pencil / Rough Notes Toggle & Erase -->
+          <div class="keypad-actions">
+            <button type="button" id="notes-toggle-btn" class="action-btn notes-btn" title="Toggle Pencil/Rough Notes Mode (Hotkey: N)">
+              <span id="notes-icon">✏️</span>
+              <span id="notes-label">Notes: OFF</span>
+            </button>
+            <button type="button" id="erase-btn" class="action-btn erase-btn" title="Clear selected cell value or notes">
+              ⌫ Erase
+            </button>
+          </div>
+        </div>
+
+        <!-- Main Game Controls -->
+        <div class="controls-card">
+          <button id="open-generate-btn" class="btn btn-outline" type="button">✨ New Puzzle</button>
+          <button id="hint-btn" class="btn btn-hint" type="button">💡 Smart Hint</button>
+          <button id="solve-btn" class="btn btn-primary" type="button">⚡ Solve</button>
+          <div class="controls-row">
+            <button id="reset-btn" class="btn btn-outline btn-sm" type="button">🔄 Reset</button>
+            <button id="clear-btn" class="btn btn-secondary btn-sm" type="button">🗑️ Clear</button>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <!-- Difficulty Modal -->
     <dialog id="difficulty-modal" class="modal">
       <h3>Select Difficulty</h3>
       <div class="difficulty-options">
-        <label><input type="radio" name="difficulty" value="1" checked> Easy</label>
-        <label><input type="radio" name="difficulty" value="2"> Medium</label>
-        <label><input type="radio" name="difficulty" value="3"> Hard</label>
+        <label><input type="radio" name="difficulty" value="1" checked> 🟢 Easy (41 clues)</label>
+        <label><input type="radio" name="difficulty" value="2"> 🟡 Medium (31 clues)</label>
+        <label><input type="radio" name="difficulty" value="3"> 🔴 Hard (21 clues)</label>
       </div>
       <div class="modal-actions">
-        <button id="proceed-btn" class="btn btn-primary">Proceed</button>
-        <button id="cancel-btn" class="btn btn-outline">Cancel</button>
+        <button id="proceed-btn" class="btn btn-primary" type="button">Start Game</button>
+        <button id="cancel-btn" class="btn btn-outline" type="button">Cancel</button>
       </div>
     </dialog>
 
-    <!-- Status message area -->
-    <p id="status-message"></p>
-
-	<div class="instructions">
-      <h2>How to Play</h2>
-      <ul>
-        <li>Fill empty cells with numbers from <strong>1 to 9</strong>.</li>
-        <li>Every <strong>row</strong>, <strong>column</strong>, and <strong>3×3 box</strong> must contain each digit exactly once.</li>
-        <li>Dark bold numbers are fixed clues and cannot be changed.</li>
-        <li>If you place a conflicting number, the board will flash red!</li>
-      </ul>
-    </div>
+    <!-- Instructions Card -->
+    <footer class="instructions-card">
+      <h3>📖 Game Guide & Shortcuts</h3>
+      <div class="guide-grid">
+        <p>• <strong>Crosshair Highlight:</strong> Selecting a cell highlights its row, column, 3×3 subgrid, and duplicate numbers.</p>
+        <p>• <strong>Candidate Notes:</strong> Toggle <em>Notes: ON</em> (or press <strong>N</strong>) to place 1–9 notes in any cell's 3×3 mini-grid.</p>
+        <p>• <strong>Question Cells:</strong> Starting clues are immutable and protected with a default arrow cursor.</p>
+        <p>• <strong>Controls:</strong> Use the on-screen 3×3 phone pad or your keyboard arrow keys.</p>
+      </div>
+    </footer>
   </div>
 
   <script src="solver.js"></script>

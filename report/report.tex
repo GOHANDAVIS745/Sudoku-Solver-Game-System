@@ -1,5 +1,6 @@
 \documentclass[12pt,a4paper,oneside]{book}
 
+\usepackage{float}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
@@ -11,6 +12,8 @@
 \usepackage{xcolor}
 \usepackage{listings}
 \usepackage{microtype}
+\usepackage{booktabs}
+\usepackage{tabularx}
 \usepackage{tikz}
 \usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds, shapes.multipart}
 
@@ -45,37 +48,67 @@
 
 \mainmatter
 
-\chapter{C++ WebAssembly Sudoku Solver}
+\chapter{C++ WebAssembly Sudoku Solver \& Game System}
 \chapterauthor{Akash Prajapati(251103), Swaraj Koushik(251105)}
 
 \section{Introduction and Problem Statement}
-Sudoku is deceptively simple for humans to understand, but solving it programmatically on harder grids can quickly become a bottleneck in browser environments. When implemented entirely in client-side JavaScript, recursive search algorithms like depth-first backtracking often struggle with call-stack overhead and variable performance across different devices. On the other hand, writing a native desktop application in C++ gives great performance, but makes it harder to share and run without installation hurdles.
+Sudoku is deceptively simple to learn, but computationally challenging to solve programmatically on harder puzzles. When implemented purely in client-side interpreted JavaScript, recursive algorithms such as depth-first search (DFS) backtracking often suffer from noticeable execution latency, high memory usage, and call-stack limits on low-power devices. Conversely, native C++ desktop applications provide lightning-fast solving performance, but they require users to compile, install, and manage platform-specific software.
 
-To get the best of both worlds, we built this project around a decoupled, two-tier architecture. All core game rules, grid representation, and recursive backtracking logic are written in modern C++ (C++17) using clean Object-Oriented principles. We then compile this backend into WebAssembly (Wasm) using Emscripten. This approach lets our C++ solver run directly inside any modern web browser at near-native speeds, while a lightweight HTML5, CSS Grid, and vanilla JavaScript frontend handles player interaction, real-time board validation, and animations.
+To solve this dilemma, we designed our project around a decoupled, two-tier architecture. All core domain logic, grid representation, coordinate uniqueness checking, and recursive backtracking routines are implemented in modern C++ (C++17) using clean Object-Oriented principles. Using the Emscripten toolchain, we compile the C++ backend into portable WebAssembly (Wasm). This allows the solver to run directly inside any modern web browser at near-native speeds (consistently solving in under 5 milliseconds) with zero server infrastructure required. A lightweight frontend built with HTML5, CSS Grid, and vanilla JavaScript provides an interactive, responsive user experience complete with a live stopwatch, an on-screen phone keypad, rough candidate notes, and multi-theme personalization.
 
 \section{Scope and Feature Set}
-We designed the game to be practical, responsive, and intuitive to play:
+The application delivers a comprehensive suite of gameplay, algorithmic, and interface features:
 \begin{itemize}
-    \item \textbf{Instant C++ Backtracking Engine:} Uses recursive Depth-First Search with search pruning to solve valid $9 \times 9$ boards in under 5 milliseconds.
-    \item \textbf{On-Demand Puzzle Generation:} Generates fresh, solvable puzzles across three distinct difficulty tiers (Easy: 40 clues removed, Medium: 50 removed, Hard: 60 removed).
-    \item \textbf{Smart Hint System:} Helps players when they get stuck. Instead of giving away the entire solution, it runs the solver in the background, deduces the correct number for the cell the player has currently selected (or picks an empty square), and fills it in with an amber highlight.
-    \item \textbf{Live Conflict Detection \& Visual Feedback:} Checks rows, columns, and $3 \times 3$ boxes on every keystroke. Conflicting numbers instantly turn the grid border red and trigger a shake animation so mistakes are spotted right away.
-    \item \textbf{Safe State Management (Reset vs. Clear):} Distinguishes between starting fresh (`Clear`, which wipes the board) and reverting user guesses (`Reset`, which restores the original starting puzzle clues).
-    \item \textbf{Strict Clue Locking:} Starting clues are permanently marked read-only so players cannot accidentally overwrite given numbers during gameplay.
+    \item \textbf{High-Speed C++ Backtracking Engine:} Implements recursive depth-first search with constraint-based pruning to solve valid $9 \times 9$ boards in under 5 milliseconds directly in the browser.
+    \item \textbf{Dynamic Multi-Tier Puzzle Generation:} Uses randomized board generation and difficulty-parameterized clue carving to synthesize puzzles on demand across Easy (41 clues), Medium (31 clues), and Hard (21 clues) tiers.
+    \item \textbf{Smart Hint System:} Evaluates the player's board in real time, solves it in the background via C++ WebAssembly, and reveals a single verified number either at the player's actively selected square or across a randomly chosen empty cell without exposing the rest of the board.
+    \item \textbf{On-Screen 3x3 Phone Keypad:} Features a dedicated numeric keypad arranged in a 3x3 phone layout (digits 1--9) placed conveniently to the right of the board for mouse and touchscreen gameplay.
+    \item \textbf{3x3 Rough Candidate Notes (Pencil Mode):} Each cell contains an embedded 3x3 mini-grid. Toggling Notes Mode allows players to jot down, toggle, and erase 1--9 candidate possibilities before committing to an entry.
+    \item \textbf{Dynamic Crosshair \& Duplicate Highlighting:} Selecting any square illuminates its entire row, column, and $3 \times 3$ subgrid, while simultaneously highlighting all identical numbers across the board for rapid visual scanning.
+    \item \textbf{Real-Time Conflict Detection \& Per-Cell Red Highlighting:} Live mathematical validation checks for duplicate digits across rows, columns, and 3x3 boxes on every entry. Conflicting cells immediately illuminate in bright red, the board border glows red, and a shake animation triggers.
+    \item \textbf{Player-Only Victory Recognition:} Differentiates between human player completion and automated solving via the C++ engine. The victory celebration and completion timer trigger strictly when the human player finishes the board.
+    \item \textbf{Question Cell Cursor Protection:} Starting clues are permanently marked read-only and styled with default arrow cursors, preventing caret blinking or hand pointers on immutable numbers.
+    \item \textbf{Multi-Theme Customization:} Features a responsive background theme picker supporting seven distinct palettes: Ocean, Wood, Sky, Space, Nature, Dark Slate, and Clean Light.
+    \item \textbf{Live Game Timer:} An integrated stopwatch tracks elapsed solving time with play/pause controls.
 \end{itemize}
+
+\section{Tools and Technology Stack}
+To build and deploy a decoupled WebAssembly application, we selected a toolchain that bridges low-level systems programming with high-level browser technologies. Modern C++17 provides strict type safety, predictable memory management, and efficient recursive algorithms. Emscripten acts as the critical bridge, compiling the C++ source files into compact WebAssembly bytecode while generating the JavaScript runtime glue. The frontend relies exclusively on standard web technologies without heavy external frameworks, keeping load times minimal.
+
+Table~\ref{tab:tools} summarizes the complete development environment and the specific role of each technology.
+
+\begin{table}[htbp]
+\centering
+\begin{tabularx}{\textwidth}{l p{4.2cm} X}
+\toprule
+\textbf{Category} & \textbf{Tool / Technology} & \textbf{Role in System} \\
+\midrule
+Language & Modern C++ (C++17) & Implements atomic domain models, 3x3 constraint algorithms, and recursive backtracking. \\
+Compiler & Emscripten SDK (\texttt{emsdk}) & Compiles C++ source into portable WebAssembly bytecode (\texttt{solver.wasm}) and JS glue (\texttt{solver.js}). \\
+Frontend & HTML5, CSS Grid, ES6+ & Provides responsive layout, 3x3 candidate subgrids, theme stylesheets, and touch/keyboard controls. \\
+Local Server & Python \texttt{http.server} & Serves WebAssembly binaries with compliant MIME types, bypassing local browser CORS blocks. \\
+Typesetting & LaTeX \& TikZ & Typesets academic documentation and renders native vector UML and flow diagrams. \\
+Version Control & Git \& GitHub & Manages project versioning, feature branches, and collaboration history. \\
+\bottomrule
+\end{tabularx}
+\caption{Technology stack and development toolchain.}
+\label{tab:tools}
+\end{table}
 
 \section{Object-Oriented Architecture}
-We organized the backend around core Object-Oriented Programming (OOP) concepts to keep the logic clean, modular, and easy to test.
+The system is built upon foundational Object-Oriented Programming (OOP) paradigms to ensure modularity, separation of concerns, and future extensibility.
 
 \subsection{Class Design and Associations}
-The backend consists of four primary components:
+The C++ domain architecture consists of four primary entities:
 \begin{itemize}
-    \item \textbf{Encapsulation (\texttt{Cell} and \texttt{Board}):} The \texttt{Cell} class encapsulates its value (strictly bounded between 0 and 9) and whether it is a fixed clue. The \texttt{Board} class owns the $9 \times 9$ matrix of cells, keeping direct grid modification private. External components must call \texttt{board.setCell()}, which guarantees that invalid values or attempts to alter fixed clues are rejected.
-    \item \textbf{Abstraction \& Strategy Pattern (\texttt{SudokuSolver}):} Rather than coupling the solving algorithm directly to the board data, we defined an abstract base class \texttt{SudokuSolver} with a pure virtual method \texttt{virtual bool solve(Board\& board) = 0}. Both \texttt{BacktrackingSolver} (deterministic DFS) and \texttt{RandomGenerator} (randomized candidate order) inherit from this interface. This makes it straightforward to swap in alternative solving strategies (such as Dancing Links / Algorithm X) in the future without touching the rest of the application.
+    \item \textbf{Encapsulation (\texttt{Cell} and \texttt{Board}):} The \texttt{Cell} class encapsulates its internal digit (strictly constrained to $0 \le \text{val} \le 9$) and its fixed-state boolean flag. The \texttt{Board} class encapsulates the 81-cell matrix (\texttt{Cell grid[9][9]}). Direct member modifications are prevented; callers must invoke \texttt{board.setCell()}, which enforces domain boundary invariants and protects given clues.
+    \item \textbf{Abstraction \& Strategy Pattern (\texttt{SudokuSolver}):} To decouple board representation from solving algorithms, we declared an abstract base class \texttt{SudokuSolver} with a pure virtual contract \texttt{virtual bool solve(Board\& board) = 0}. Concrete strategies (\texttt{BacktrackingSolver} and \texttt{RandomGenerator}) inherit from this interface, allowing algorithmic strategies to be swapped without modifying the board or UI.
 \end{itemize}
 
-\vspace{1em}
-\begin{center}
+Figure~\ref{fig:uml_class} illustrates the class hierarchy, member attributes, methods, and access specifiers.
+
+\begin{figure}[htbp]
+\centering
 \begin{tikzpicture}[
     node distance=1.5cm and 2cm,
     umlclass/.style={draw, rectangle split, rectangle split parts=3, 
@@ -135,11 +168,12 @@ The backend consists of four primary components:
 \draw[dashedarrow] (Board.north) -- (Cell.south) node[midway, right=0.1cm] {Aggregates (81)};
 
 \end{tikzpicture}
-\end{center}
-\vspace{1em}
+\caption{UML Class Diagram illustrating structural relationships and inheritance hierarchy.}
+\label{fig:uml_class}
+\end{figure}
 
 \subsection{Code Snippet: Abstraction \& Encapsulation}
-The snippet below shows how the abstract interface decouples the algorithm while the board safeguards its internal state:
+The C++ implementation below illustrates how encapsulation and abstract polymorphism work together:
 
 \begin{lstlisting}
 class Board {
@@ -147,7 +181,6 @@ private:
     Cell grid[81]; // Encapsulated matrix
 public:
     bool setCell(int index, int value) {
-        // Guard against altering starting clues
         if (!grid[index].isFixed()) {
             grid[index].setValue(value);
             return true;
@@ -156,7 +189,7 @@ public:
     }
 };
 
-// Abstract Solver Contract
+// Abstract Strategy Interface
 class SudokuSolver {
 public:
     virtual bool solve(Board& board) = 0; // Pure virtual function
@@ -166,99 +199,165 @@ public:
 class BacktrackingSolver : public SudokuSolver {
 public:
     bool solve(Board& board) override {
-        // Recursive depth-first search with backtracking
+        // Recursive depth-first search with pruning
     }
 };
 \end{lstlisting}
 
-\subsection{Code Snippet: Smart Hint Integration (app.js)}
-When the user requests a hint, JavaScript asks the C++ WebAssembly module to solve the current puzzle in the background, then extracts and renders just the target number:
+% =====================================================================
+% Section 5: System Architecture & Flow Diagrams
+% =====================================================================
+\section{System Architecture \& Flow Diagrams}
+To thoroughly document how the software is structured and how it behaves dynamically at runtime, we modeled the application across three complementary architectural views: high-level component tiering, operational control sequencing, and cross-runtime data pipelining.
 
-\begin{lstlisting}
-// Run C++ backtracking solver in Wasm to find the complete solution
-const solvedBoard = sudokuModule.solvePuzzle(currentBoard);
-if (solvedBoard && solvedBoard.length === 81) {
-    // Fill the focused square if empty; otherwise choose a random empty cell
-    let targetIndex = (lastFocusedIndex >= 0 && currentBoard[lastFocusedIndex] === "0")
-                      ? lastFocusedIndex
-                      : emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
-    
-    const targetCell = gridContainer.children[targetIndex];
-    targetCell.value = solvedBoard[targetIndex];
-    targetCell.classList.add("hint");
-    targetCell.focus();
-}
-\end{lstlisting}
+\subsection{System Architecture Diagram}
+Figure~\ref{fig:architecture} illustrates the decoupled two-tier architecture. The frontend tier operates completely within the client browser sandbox, managing the DOM grid, on-screen keypad inputs, and active UI states. When solving or hint operations are triggered, the WebAssembly boundary coordinates data exchange using stateless 81-character string serialization. The backend C++ tier receives the serialized payload, reconstructs the object graph, executes recursive backtracking, and serializes the resolved grid back to the DOM without incurring cross-runtime memory leaks.
 
-\section{System Communication and Workflow}
-Rather than passing complex object references across the JavaScript and C++ runtime boundary, we adopted a clean, stateless communication protocol based on string serialization.
-
-\begin{itemize}
-    \item \textbf{Frontend UI Layer:} HTML and CSS Grid render the interactive board, while \texttt{app.js} captures user actions (typing digits, clicking buttons, using arrow keys) and runs instant conflict validation.
-    \item \textbf{WebAssembly Boundary:} When the user clicks \textit{Solve} or \textit{Hint}, JavaScript converts the grid into an 81-character string (with \texttt{'0'} for empty squares) and passes it to the WebAssembly module. This string-based interface keeps memory management cleanly isolated, preventing memory leaks between the browser's garbage collector and C++ heap.
-    \item \textbf{C++ Backend Layer:} Emscripten bindings unpack the string into a \texttt{Board} object and hand it to \texttt{BacktrackingSolver}. Once solved, the board is serialized back into an 81-character string and returned to JavaScript, which updates the DOM.
-\end{itemize}
-
-\vspace{1em}
-\begin{center}
+\begin{figure}[htbp]
+\centering
 \begin{tikzpicture}[
     node distance=1.5cm and 1cm,
-    block/.style={rectangle, draw, fill=blue!5, text width=4cm, text centered, minimum height=1.5cm, rounded corners=3pt},
-    wblock/.style={rectangle, draw, fill=red!10, text width=4.5cm, text centered, minimum height=1.5cm, rounded corners=3pt, dashed, thick},
-    arrow/.style={-{Stealth[scale=1.2]}, thick},
-    container/.style={rectangle, draw, dashed, fill=gray!5, inner sep=15pt, rounded corners=5pt}
+    block/.style={rectangle, draw=blue!80, fill=blue!5, text width=3.8cm, text centered, minimum height=1.3cm, rounded corners=4pt, font=\small},
+    wblock/.style={rectangle, draw=red!80, fill=red!10, text width=4.5cm, text centered, minimum height=1.3cm, rounded corners=4pt, dashed, thick, font=\small},
+    arrow/.style={-{Stealth[scale=1.1]}, thick},
+    container/.style={rectangle, draw, dashed, fill=gray!5, inner sep=12pt, rounded corners=6pt}
 ]
 
 % Row 1: Frontend
-\node[block] (UI) {\textbf{HTML/CSS} \\ DOM Interface};
-\node[block, right=1.5cm of UI] (JS) {\textbf{app.js} \\ Validation \& Events};
-\draw[<->, -{Stealth[scale=1.2]}, thick] (UI) -- (JS);
+\node[block] (UI) {\textbf{HTML5 / CSS Grid} \\ User Interface};
+\node[block, right=1.6cm of UI] (JS) {\textbf{app.js} \\ Controller \& Validation};
+\draw[<->, thick] (UI) -- (JS);
 
 \begin{scope}[on background layer]
-    \node[container, fit=(UI) (JS), label=above:\textbf{Frontend Tier (Client Browser)}] (Front) {};
+    \node[container, fit=(UI) (JS), label=above:\textbf{Tier 1: Frontend Presentation Layer (Browser)}] (Front) {};
 \end{scope}
 
 % Row 2: Boundary
-\node[wblock, below=2cm of JS] (Wasm) {\textbf{WebAssembly Bridge} \\ String Serialization};
+\node[wblock, below=1.8cm of JS] (Wasm) {\textbf{WebAssembly Bridge} \\ String Serialization};
 
-\draw[arrow] ([xshift=1cm]JS.south) -- ([xshift=1cm]Wasm.north) node[midway, right, font=\footnotesize] {\texttt{solve/hint("53..")}};
-\draw[arrow] ([xshift=-1cm]Wasm.north) -- ([xshift=-1cm]JS.south) node[midway, left, font=\footnotesize] {Solution String};
+\draw[arrow] ([xshift=0.8cm]JS.south) -- ([xshift=0.8cm]Wasm.north) node[midway, right, font=\footnotesize] {\texttt{solve/hint("53..")}};
+\draw[arrow] ([xshift=-0.8cm]Wasm.north) -- ([xshift=-0.8cm]JS.south) node[midway, left, font=\footnotesize] {Solution String};
 
 % Row 3: Backend
-\node[block, below=2cm of Wasm] (API) {\textbf{Emscripten Bindings} \\ API Exposure};
-\node[block, left=1.5cm of API] (Board) {\textbf{Board \& Cell} \\ Object State};
-\node[block, below=1cm of Board] (Solver) {\textbf{BacktrackingSolver} \\ DFS Algorithm};
+\node[block, below=1.8cm of Wasm] (API) {\textbf{Emscripten Bindings} \\ (bindings.cpp)};
+\node[block, left=1.6cm of API] (Board) {\textbf{Board \& Cell} \\ Object State};
+\node[block, below=0.9cm of Board] (Solver) {\textbf{BacktrackingSolver} \\ DFS Engine};
 
-\draw[arrow] ([xshift=1cm]Wasm.south) -- ([xshift=1cm]API.north) node[midway, right, font=\footnotesize] {Deserialization};
-\draw[arrow] ([xshift=-1cm]API.north) -- ([xshift=-1cm]Wasm.south) node[midway, left, font=\footnotesize] {Serialization};
+\draw[arrow] ([xshift=0.8cm]Wasm.south) -- ([xshift=0.8cm]API.north) node[midway, right, font=\footnotesize] {Deserialize};
+\draw[arrow] ([xshift=-0.8cm]API.north) -- ([xshift=-0.8cm]Wasm.south) node[midway, left, font=\footnotesize] {Serialize};
 
-\draw[<->, -{Stealth[scale=1.2]}, thick] (API) -- (Board);
-\draw[<->, -{Stealth[scale=1.2]}, thick] (Board) -- (Solver);
+\draw[<->, thick] (API) -- (Board);
+\draw[<->, thick] (Board) -- (Solver);
 
 \begin{scope}[on background layer]
-    \node[container, fit=(API) (Board) (Solver), label=below:\textbf{Backend Tier (C++ OOP)}] (Back) {};
+    \node[container, fit=(API) (Board) (Solver), label=below:\textbf{Tier 2: C++ OOP Backend Engine (Native Bytecode)}] (Back) {};
 \end{scope}
 
 \end{tikzpicture}
-\end{center}
-\vspace{1em}
+\caption{System Architecture Diagram illustrating the decoupled two-tier WebAssembly design.}
+\label{fig:architecture}
+\end{figure}
 
-\section{Tools and Technology Stack}
-\begin{itemize}
-    \item \textbf{C++17:} Implements domain models, constraint validation, and recursive backtracking.
-    \item \textbf{Emscripten SDK (\texttt{emsdk}):} Compiles the C++ source files into a compact WebAssembly module (\texttt{solver.wasm}) and generates the JavaScript loader (\texttt{solver.js}).
-    \item \textbf{HTML5 / CSS3 / Vanilla JavaScript:} Provides the lightweight frontend, CSS Grid styling, input masking, and animations.
-    \item \textbf{Python \texttt{http.server}:} Serves the project files locally during development with correct MIME types for WebAssembly, avoiding browser CORS restrictions.
-\end{itemize}
+\subsection{Control Flow Diagram (CFD)}
+Figure~\ref{fig:cfd} illustrates the complete execution pipeline triggered when a user enters an input, clicks the keypad, or toggles candidate notes. The system validates cell immutability, checks the active mode, updates board state, computes conflict indices, and checks victory status.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    node distance=1.2cm and 1.5cm,
+    startstop/.style={rectangle, rounded corners, minimum width=3cm, minimum height=0.8cm, text centered, draw=black, fill=red!10, font=\small\bfseries},
+    process/.style={rectangle, minimum width=3.5cm, minimum height=0.8cm, text centered, draw=black, fill=blue!10, font=\small},
+    decision/.style={diamond, aspect=2, minimum width=3.2cm, minimum height=0.8cm, text centered, draw=black, fill=orange!15, font=\footnotesize},
+    arrow/.style={thick, -{Stealth[scale=1.1]}}
+]
+
+\node[startstop] (start) {User Enters Digit / Action};
+\node[decision, below=0.8cm of start] (dec1) {Cell Fixed (Given)?};
+\node[process, right=1.5cm of dec1] (ignore) {Ignore Input};
+\node[decision, below=0.8cm of dec1] (dec2) {Notes Mode ON?};
+\node[process, right=1.5cm of dec2] (notes) {Toggle 3x3 Mini-Grid Note};
+\node[process, below=0.8cm of dec2] (place) {Set Value \& Clear Cell Notes};
+\node[process, below=0.8cm of place] (validate) {Execute getConflictIndices()};
+\node[decision, below=0.8cm of validate] (dec3) {Conflicts Found?};
+\node[process, right=1.5cm of dec3] (error) {Highlight Red \& Shake};
+\node[decision, below=0.8cm of dec3] (dec4) {Board 100\% Filled?};
+\node[process, below=0.8cm of dec4] (win) {Stop Timer \& Celebrate Victory};
+\node[process, left=1.5cm of dec4] (continue) {Await Next Input};
+
+\draw[arrow] (start) -- (dec1);
+\draw[arrow] (dec1) -- node[above, font=\scriptsize] {Yes} (ignore);
+\draw[arrow] (dec1) -- node[left, font=\scriptsize] {No} (dec2);
+\draw[arrow] (dec2) -- node[above, font=\scriptsize] {Yes} (notes);
+\draw[arrow] (dec2) -- node[left, font=\scriptsize] {No} (place);
+\draw[arrow] (place) -- (validate);
+\draw[arrow] (validate) -- (dec3);
+\draw[arrow] (dec3) -- node[above, font=\scriptsize] {Yes} (error);
+\draw[arrow] (dec3) -- node[left, font=\scriptsize] {No} (dec4);
+\draw[arrow] (dec4) -- node[left, font=\scriptsize] {Yes} (win);
+\draw[arrow] (dec4) -- node[above, font=\scriptsize] {No} (continue);
+
+\end{tikzpicture}
+\caption{Control Flow Diagram (CFD) of user input, candidate notes, and conflict checking.}
+\label{fig:cfd}
+\end{figure}
+
+\subsection{Data Flow Diagram (DFD)}
+Figure~\ref{fig:dfd} traces how state data moves between the player interface, memory stores, and the compiled WebAssembly routines. Data paths are cleanly partitioned with dedicated parallel channels and offset routing to prevent visual overlap.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    node distance=1.6cm and 2.4cm,
+    entity/.style={rectangle, draw=black, thick, fill=purple!10, minimum width=2.6cm, minimum height=1.0cm, align=center, font=\small\bfseries},
+    process/.style={ellipse, draw=black, thick, fill=blue!10, minimum width=3.4cm, minimum height=1.2cm, align=center, font=\small},
+    storage/.style={rectangle, draw=black, thick, fill=yellow!15, minimum width=3.6cm, minimum height=1.1cm, align=center, font=\small},
+    flow/.style={thick, -{Stealth[scale=1.1]}, draw=gray!80}
+]
+
+\node[entity] (user) {Player};
+\node[process, right=2.0cm of user] (p1) {1.0 UI Controller\\(app.js)};
+\node[process, right=2.6cm of p1] (p2) {2.0 Validator\\(Conflict Logic)};
+
+\node[storage, below=2.0cm of p1] (d1) {\textbf{Data Stores}\\[2pt]\footnotesize\texttt{currentOriginalPuzzle}\\\footnotesize\texttt{cellNotes[81]}};
+
+\node[process, below=2.0cm of d1] (p3) {3.0 Wasm Bridge\\(bindings.cpp)};
+\node[process, right=2.6cm of p3] (p4) {4.0 C++ Engine\\(BacktrackingSolver)};
+
+% User <-> P1
+\draw[flow] ([yshift=3pt]user.east) -- node[above, font=\scriptsize] {Inputs} ([yshift=3pt]p1.west);
+\draw[flow] ([yshift=-3pt]p1.west) -- node[below, font=\scriptsize] {Display} ([yshift=-3pt]user.east);
+
+% P1 <-> P2
+\draw[flow] ([yshift=3pt]p1.east) -- node[above, font=\scriptsize] {Grid String} ([yshift=3pt]p2.west);
+\draw[flow] ([yshift=-3pt]p2.west) -- node[below, font=\scriptsize] {Conflict Sets} ([yshift=-3pt]p1.east);
+
+% P1 <-> D1
+\draw[flow] ([xshift=-4pt]p1.south) -- node[left, font=\scriptsize] {Read Clues} ([xshift=-4pt]d1.north);
+\draw[flow] ([xshift=4pt]d1.north) -- node[right, font=\scriptsize] {Save State} ([xshift=4pt]p1.south);
+
+% D1 -> P3
+\draw[flow] (d1.south) -- node[right, font=\scriptsize] {Board String} (p3.north);
+
+% P3 <-> P4
+\draw[flow] ([yshift=3pt]p3.east) -- node[above, font=\scriptsize] {Board Object} ([yshift=3pt]p4.west);
+\draw[flow] ([yshift=-3pt]p4.west) -- node[below, font=\scriptsize] {Solved Result} ([yshift=-3pt]p3.east);
+
+% P3 -> P1 (Direct curved return on the outer perimeter)
+\draw[flow] (p3.west) to[bend left=45] node[midway, left, font=\scriptsize] {Return Solved String} (p1.south west);
+
+\end{tikzpicture}
+\caption{Data Flow Diagram (Level 1 DFD) showing string serialization across runtime tiers.}
+\label{fig:dfd}
+\end{figure}
 
 \section{Prompt Documentation and Development Workflow}
-Throughout the project, we used conversational AI as an active pair programmer to help flesh out requirements, debug build toolchains, design the UI, and solve tricky runtime edge cases. Below is the summary of the prompts and implementation phases:
+The project was engineered iteratively through conversational AI prompting, moving methodically from backend domain modeling to compiler debugging, UI/UX polish, and feature additions.
 
-\subsection{Prompts for README Implementation Phases}
+\subsection{README Implementation Phases}
 \begin{enumerate}
     \item \textbf{README Phase 1: Core Domain Modeling (C++)}
     \begin{itemize}
-        \item \textit{``Construct atomic Cell entities and an aggregate Board class in modern C++ with strict encapsulation. Ensure values are bounded between 0 and 9, fixed clues are protected from mutation, and row, column, and 3x3 box uniqueness rules (startRow = r - r \% 3, startCol = c - c \% 3) are strictly verified.''}
+        \item \textit{``Construct an atomic Cell class and an aggregate Board class in modern C++ with strict encapsulation. Ensure values are bounded between 0 and 9, fixed clues are protected from modification, and row, column, and 3x3 box uniqueness rules (startRow = r - r \% 3, startCol = c - c \% 3) are strictly verified.''}
         \item \textit{``Write a local CLI driver in main.cpp to validate coordinate boundaries, board loading from string representations, and console-based formatted display.''}
     \end{itemize}
 
@@ -288,25 +387,32 @@ Throughout the project, we used conversational AI as an active pair programmer t
     \end{itemize}
 \end{enumerate}
 
-\subsection{Prompts for Compilation, Toolchain \& Environment Debugging}
+\subsection{Toolchain \& Build Debugging Prompts}
 \begin{itemize}
     \item \textbf{IntelliSense Header Discovery:} \textit{``Troubleshoot VS Code IntelliSense include errors for Emscripten bindings where <emscripten/bind.h> is flagged with red squiggles, and provide the exact c\_cpp\_properties.json configuration.''}
     \item \textbf{Compiler Driver Mismatch:} \textit{``Debug wasm-ld linking errors caused by using the emcc C compiler instead of the em++ C++ compiler when compiling and linking C++ standard library files and embind objects.''}
     \item \textbf{Local Web Server Setup:} \textit{``Clarify deployment requirements regarding the Emscripten environment script (source emsdk\_env.sh) for compilation versus running the Python HTTP server (python3 -m http.server) to bypass browser CORS restrictions on WebAssembly binaries.''}
 \end{itemize}
 
-\subsection{Prompts for Feature Expansion: Smart Hint System}
+\subsection{Feature Expansion \& Runtime Debugging Prompts}
 \begin{itemize}
-    \item \textbf{Feature Design:} \textit{``Design a Smart Hint system where JavaScript sends the current board to C++, solves it in the background, reveals a single correct number at the focused square, and highlights it on the UI.''}
-    \item \textbf{Zero-Recompile Architectural Workaround:} \textit{``Diagnose the runtime error 'Uncaught TypeError: sudokuModule.getSmartHint is not a function' caused by uncompiled Wasm bindings, and implement an architectural solution in app.js that dispatches to the pre-compiled solvePuzzle function with zero recompilation needed.''}
+    \item \textbf{Smart Hint Specification \& Zero-Recompile Resolution:} \textit{``Design a Smart Hint system where JavaScript sends the current board to C++, solves it in the background, reveals a single correct number at the focused square, and highlights it on the UI. Resolve the resulting runtime error 'TypeError: sudokuModule.getSmartHint is not a function' by routing through the pre-compiled solvePuzzle endpoint.''}
+    \item \textbf{Defensive Event Listener Hardening:} \textit{``Diagnose why buttons stopped responding due to uncaught null-reference TypeErrors on dynamically created elements, and implement defensive null-checks across all button event registrations.''}
+    \item \textbf{Conflict Highlight Specificity Fix:} \textit{``Diagnose why conflicting duplicate cells were not turning red upon validation, and implement getConflictIndices() with high-specificity CSS rules to override active cell styling.''}
+    \item \textbf{Theme Contrast Refinement:} \textit{``Darken the highlighted crosshair and same-number tint colors for Wood, Sky, and Clean Light themes to ensure strong contrast against bright cell backgrounds.''}
+    \item \textbf{Player Victory Separation:} \textit{``Ensure that the completion celebration only fires when the human player finishes the board, preventing the C++ Solve button from triggering the player congratulations message.''}
 \end{itemize}
 
+\clearpage
 \section{Project Screenshots}
-Figure~\ref{fig:screenshot} shows the application running in the browser. The user interface displays a freshly generated puzzle with bold starting clues, the controls bar (Generate Puzzle, Solve, Reset, Clear), the interactive feedback message, and the onboarding instructions card below the grid.
+\vspace{-0.5em}
+Figure~\ref{fig:screenshot} displays the running application in the browser. The user interface highlights the 9x9 grid, active starting clues, the right-hand sidebar featuring the live timer, the 3x3 phone keypad, pencil notes controls, and the instruction drawer.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
-\includegraphics[width=0.75\textwidth]{S1.png}
+\vspace{-0.5em}
+\includegraphics[width=0.62\textwidth]{S1.png}
+\vspace{-0.5em}
 \caption{The C++ WebAssembly Sudoku interface displaying a generated puzzle, active game controls, and how-to-play instructions.}
 \label{fig:screenshot}
 \end{figure}
