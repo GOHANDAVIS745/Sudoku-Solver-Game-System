@@ -1,5 +1,6 @@
 \documentclass[12pt,a4paper,oneside]{book}
 
+% Universal Encoding & Packages (Compiles cleanly across pdfLaTeX, XeLaTeX, and LuaLaTeX)
 \usepackage{float}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
@@ -17,6 +18,7 @@
 \usepackage{tikz}
 \usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds, shapes.multipart}
 
+% Code Listing Configuration
 \lstset{
     language=C++,
     basicstyle=\ttfamily\small,
@@ -48,14 +50,25 @@
 
 \mainmatter
 
+% Set Chapter counter to 4 so the upcoming \chapter automatically becomes Chapter 5
+\setcounter{chapter}{4}
+
 \chapter{C++ WebAssembly Sudoku Solver \& Game System}
 \chapterauthor{Akash Prajapati(251103), Swaraj Koushik(251105)}
 
+% =====================================================================
+% Section 5.1: Introduction and Problem Statement
+% =====================================================================
 \section{Introduction and Problem Statement}
-Sudoku is deceptively simple to learn, but computationally challenging to solve programmatically on harder puzzles. When implemented purely in client-side interpreted JavaScript, recursive algorithms such as depth-first search (DFS) backtracking often suffer from noticeable execution latency, high memory usage, and call-stack limits on low-power devices. Conversely, native C++ desktop applications provide lightning-fast solving performance, but they require users to compile, install, and manage platform-specific software.
+Sudoku is a logic-based combinatorial puzzle that requires filling a $9 \times 9$ grid with digits from 1 through 9 such that every row, column, and $3 \times 3$ subgrid contains each digit exactly once without duplication. While the game rules are straightforward for human players, solving difficult puzzles algorithmically is an established NP-complete problem. 
+
+When implemented entirely in client-side interpreted JavaScript, recursive algorithms such as depth-first search (DFS) backtracking often suffer from noticeable execution latency, high memory usage, and call-stack limits on low-power devices. Conversely, native C++ desktop applications provide lightning-fast solving performance, but they require users to compile, install, and manage platform-specific software.
 
 To solve this dilemma, we designed our project around a decoupled, two-tier architecture. All core domain logic, grid representation, coordinate uniqueness checking, and recursive backtracking routines are implemented in modern C++ (C++17) using clean Object-Oriented principles. Using the Emscripten toolchain, we compile the C++ backend into portable WebAssembly (Wasm). This allows the solver to run directly inside any modern web browser at near-native speeds (consistently solving in under 5 milliseconds) with zero server infrastructure required. A lightweight frontend built with HTML5, CSS Grid, and vanilla JavaScript provides an interactive, responsive user experience complete with a live stopwatch, an on-screen phone keypad, rough candidate notes, and multi-theme personalization.
 
+% =====================================================================
+% Section 5.2: Scope and Feature Set
+% =====================================================================
 \section{Scope and Feature Set}
 The application delivers a comprehensive suite of gameplay, algorithmic, and interface features:
 \begin{itemize}
@@ -72,6 +85,9 @@ The application delivers a comprehensive suite of gameplay, algorithmic, and int
     \item \textbf{Live Game Timer:} An integrated stopwatch tracks elapsed solving time with play/pause controls.
 \end{itemize}
 
+% =====================================================================
+% Section 5.3: Tools and Technology Stack
+% =====================================================================
 \section{Tools and Technology Stack}
 To build and deploy a decoupled WebAssembly application, we selected a toolchain that bridges low-level systems programming with high-level browser technologies. Modern C++17 provides strict type safety, predictable memory management, and efficient recursive algorithms. Emscripten acts as the critical bridge, compiling the C++ source files into compact WebAssembly bytecode while generating the JavaScript runtime glue. The frontend relies exclusively on standard web technologies without heavy external frameworks, keeping load times minimal.
 
@@ -95,6 +111,9 @@ Version Control & Git \& GitHub & Manages project versioning, feature branches, 
 \label{tab:tools}
 \end{table}
 
+% =====================================================================
+% Section 5.4: Object-Oriented Architecture
+% =====================================================================
 \section{Object-Oriented Architecture}
 The system is built upon foundational Object-Oriented Programming (OOP) paradigms to ensure modularity, separation of concerns, and future extensibility.
 
@@ -205,7 +224,7 @@ public:
 \end{lstlisting}
 
 % =====================================================================
-% Section 5: System Architecture & Flow Diagrams
+% Section 5.5: System Architecture & Flow Diagrams
 % =====================================================================
 \section{System Architecture \& Flow Diagrams}
 To thoroughly document how the software is structured and how it behaves dynamically at runtime, we modeled the application across three complementary architectural views: high-level component tiering, operational control sequencing, and cross-runtime data pipelining.
@@ -350,6 +369,9 @@ Figure~\ref{fig:dfd} traces how state data moves between the player interface, m
 \label{fig:dfd}
 \end{figure}
 
+% =====================================================================
+% Section 5.6: Prompt Documentation and Development Workflow
+% =====================================================================
 \section{Prompt Documentation and Development Workflow}
 The project was engineered iteratively through conversational AI prompting, moving methodically from backend domain modeling to compiler debugging, UI/UX polish, and feature additions.
 
@@ -403,18 +425,58 @@ The project was engineered iteratively through conversational AI prompting, movi
     \item \textbf{Player Victory Separation:} \textit{``Ensure that the completion celebration only fires when the human player finishes the board, preventing the C++ Solve button from triggering the player congratulations message.''}
 \end{itemize}
 
+% =====================================================================
+% Section 5.7: Project Screenshots
+% =====================================================================
 \clearpage
 \section{Project Screenshots}
 \vspace{-0.5em}
-Figure~\ref{fig:screenshot} displays the running application in the browser. The user interface highlights the 9x9 grid, active starting clues, the right-hand sidebar featuring the live timer, the 3x3 phone keypad, pencil notes controls, and the instruction drawer.
+This section presents the graphical user interface of the running Sudoku application across various visual themes, functional modes, and interactive dialogs.
 
 \begin{figure}[H]
 \centering
 \vspace{-0.5em}
 \includegraphics[width=0.62\textwidth]{S1.png}
 \vspace{-0.5em}
-\caption{The C++ WebAssembly Sudoku interface displaying a generated puzzle, active game controls, and how-to-play instructions.}
-\label{fig:screenshot}
+\caption{Primary gameplay interface in Ocean theme, featuring the 9x9 board, live stopwatch, 3x3 phone keypad, and game control buttons.}
+\label{fig:screenshot_s1}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\vspace{-0.5em}
+\includegraphics[width=0.62\textwidth]{S2.png}
+\vspace{-0.5em}
+\caption{Multi-theme customization menu in Wood theme, demonstrating real-time palette switching across seven distinct themes.}
+\label{fig:screenshot_s2}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\vspace{-0.5em}
+\includegraphics[width=0.68\textwidth]{S3.png}
+\vspace{-0.5em}
+\caption{In-game onboarding drawer illustrating game rules, candidate notes instructions, and keyboard navigation shortcuts.}
+\label{fig:screenshot_s3}
+\end{figure}
+
+\clearpage
+\begin{figure}[H]
+\centering
+\vspace{-0.5em}
+\includegraphics[width=0.62\textwidth]{S4.png}
+\vspace{-0.5em}
+\caption{Candidate Notes (Pencil Mode) active in Space theme, showing rough 1--9 possibilities rendered within the cell's 3x3 mini-grid.}
+\label{fig:screenshot_s4}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\vspace{-0.5em}
+\includegraphics[width=0.48\textwidth]{S5.png}
+\vspace{-0.5em}
+\caption{Difficulty configuration modal dialog with backdrop blur, allowing players to select Easy (41 clues), Medium (31 clues), or Hard (21 clues).}
+\label{fig:screenshot_s5}
 \end{figure}
 
 \end{document}
